@@ -40,6 +40,7 @@ jobs:
 
   publish-snapshot-release:
     needs: [build-test, build-appimage]
+    if: ${{ always() && needs.build-test.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -50,7 +51,9 @@ jobs:
           path: artifacts/
 
       - name: Delete old snapshot release
-        run: gh release delete snapshot --yes --cleanup-tag 2>/dev/null || true
+        run: |
+          gh release delete snapshot --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || \
+            echo "No existing snapshot release to delete (or delete failed — continuing)."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
