@@ -35,9 +35,16 @@ RUN apk --no-cache add \
 
 # Pull dependencies here from base image, from cache, to avoid re-pulls during development as much as possible
 FROM base AS manual-dependency-puller
-RUN apk --no-cache add lftp
-RUN cd /tmp && lftp -c "open ftp://ftp.ossp.org; get pkg/lib/uuid/uuid-1.6.2.tar.gz -o ./ossp-uuid-1.6.2.tar.gz"
-RUN cd /tmp && wget https://cpan.metacpan.org/authors/id/C/CR/CRAZYDJ/Net-ARP-1.0.11.tgz
+RUN apk --no-cache add wget
+# OSSP's own FTP (ftp.ossp.org) is offline. Pull from a community mirror, with a fallback,
+RUN cd /tmp && ( \
+        wget --tries=3 --timeout=30 -O ossp-uuid-1.6.2.tar.gz \
+            https://distfiles.macports.org/ossp-uuid/uuid-1.6.2.tar.gz \
+        || wget --tries=3 --timeout=30 -O ossp-uuid-1.6.2.tar.gz \
+            https://ftp.netbsd.org/pub/pkgsrc/distfiles/uuid-1.6.2.tar.gz \
+    )
+RUN cd /tmp && wget --tries=3 --timeout=30 \
+    https://cpan.metacpan.org/authors/id/C/CR/CRAZYDJ/Net-ARP-1.0.11.tgz
 
 # Build manual Perl modules here
 FROM builder AS perl-builder
